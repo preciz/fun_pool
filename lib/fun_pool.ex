@@ -9,15 +9,10 @@ defmodule FunPool do
 
   ## Examples
 
-      # Start a pool with size 5
-      child_spec = FunPool.child_spec(name: :my_pool, size: 5)
-      Supervisor.start_link([child_spec], strategy: :one_for_one)
-
-      # Run a function in the pool
-      FunPool.run(:my_pool, fn ->
-        # Your throttled code here
-        :ok
-      end)
+      iex> child_spec = FunPool.child_spec(name: :my_pool, size: 5)
+      iex> {:ok, _} = Supervisor.start_link([child_spec], strategy: :one_for_one)
+      iex> FunPool.run(:my_pool, fn -> :ok end)
+      :ok
 
   ## Timeouts
 

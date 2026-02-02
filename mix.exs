@@ -48,7 +48,7 @@ defmodule FunPool.MixProject do
       main: "FunPool",
       source_ref: "v#{@version}",
       source_url: @github,
-      extras: ["README.md"]
+      extras: ["README.md", "LICENSE"]
     ]
   end
 end
