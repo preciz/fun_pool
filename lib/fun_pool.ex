@@ -18,7 +18,7 @@ defmodule FunPool do
 
   The `run/3` function accepts a timeout (defaulting to `:infinity`). This
   timeout applies to the time spent waiting for a worker to become available
-  in the pool, not necessarily the execution time of the function itself.
+  in the pool. It does not include the execution time of the function itself.
   """
 
   @behaviour NimblePool
