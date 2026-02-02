@@ -55,6 +55,29 @@ defmodule FunPoolTest do
              {:timeout, {NimblePool, :checkout, [pool]}}
   end
 
+  test "can catch timeout as shown in README", %{pool: pool} do
+    parent = self()
+
+    spawn_link(fn ->
+      FunPool.run(pool, fn ->
+        send(parent, :occupied)
+        Process.sleep(200)
+      end)
+    end)
+
+    assert_receive :occupied
+
+    result =
+      try do
+        FunPool.run(pool, fn -> :ok end, 50)
+      catch
+        :exit, {:timeout, _} ->
+          :caught_timeout
+      end
+
+    assert result == :caught_timeout
+  end
+
   test "function crash doesn't break the pool", %{pool: pool} do
     assert_raise RuntimeError, "oops", fn ->
       FunPool.run(pool, fn -> raise "oops" end)
