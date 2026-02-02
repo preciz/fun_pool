@@ -147,9 +147,41 @@ defmodule FunPoolTest do
   end
 
   test "can use PID instead of name" do
-    # This might fail if the guard is too restrictive
     pid = start_supervised!(FunPool.child_spec(name: :pid_test_pool, size: 1))
     assert FunPool.run(pid, fn -> :ok end) == :ok
+  end
+
+  test "strictly enforces max concurrency (pool size)" do
+    pool_size = 3
+    name = Module.concat(__MODULE__, "ConcurrencyLimitPool")
+    start_supervised!(FunPool.child_spec(name: name, size: pool_size))
+    parent = self()
+
+    for i <- 1..5 do
+      spawn_link(fn ->
+        FunPool.run(name, fn ->
+          send(parent, {:started, i})
+          Process.sleep(200)
+          send(parent, {:finished, i})
+        end)
+      end)
+    end
+
+    _ = for _ <- 1..pool_size, do: assert_receive({:started, _}, 500)
+
+    refute_receive {:started, _}, 100
+
+    # Since we have 5 total, and size 3:
+    # Batch 1: 3 started, 2 waiting
+    # Batch 2: 2 started
+
+    assert_receive {:finished, _}, 500
+    assert_receive {:started, _}, 500
+
+    assert_receive {:finished, _}, 500
+    assert_receive {:started, _}, 500
+
+    refute_receive {:started, _}, 100
   end
 
   test "stress test: 100 concurrent callers on pool size 5" do
@@ -161,7 +193,6 @@ defmodule FunPoolTest do
       for i <- 1..100 do
         Task.async(fn ->
           FunPool.run(name, fn ->
-            # Simulate some work
             Process.sleep(10)
             i
           end)
